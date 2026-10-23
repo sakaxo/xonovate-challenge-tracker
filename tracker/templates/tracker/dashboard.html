@@ -1,0 +1,128 @@
+{% extends 'tracker/base.html' %}
+{% load tracker_extras %}
+{% block title %}Dashboard &middot; Xonovate Challenge Tracker{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <div class="eyebrow"><i class="bi bi-activity"></i> Xonovate challenge</div>
+    <h1>{{ challenge.name }}</h1>
+    <p class="page-subtitle">
+      {{ challenge.start_date|date:"j M Y" }} - {{ challenge.end_date|date:"j M Y" }}
+      <span class="mx-1">&middot;</span> Day {{ progress.current_day }} of {{ progress.duration }}
+      <span class="mx-1">&middot;</span> <span class="badge {{ challenge.status_badge_class }}">{{ challenge.get_status_display }}</span>
+    </p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'public_progress' %}" target="_blank" rel="noopener" class="btn btn-soft"><i class="bi bi-display me-1"></i>Public page</a>
+    <a href="{% url 'revenue_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Record revenue</a>
+    <a href="{% url 'expense_create' %}" class="btn btn-outline-primary"><i class="bi bi-dash-lg me-1"></i>Record expense</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-xl-3">
+    <div class="card metric-card teal">
+      <div class="card-body">
+        <div class="metric-label">Qualifying revenue</div>
+        <div class="metric-value">{{ totals.revenue|cedi }}</div>
+        <div class="metric-note">{{ totals.revenue_transaction_count }} collected payment{{ totals.revenue_transaction_count|pluralize }}</div>
+      </div>
+      <div class="metric-icon"><i class="bi bi-graph-up-arrow"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card metric-card blue">
+      <div class="card-body">
+        <div class="metric-label">Target</div>
+        <div class="metric-value">{{ progress.target|cedi }}</div>
+        <div class="metric-note">Gross revenue target</div>
+      </div>
+      <div class="metric-icon"><i class="bi bi-bullseye"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card metric-card amber">
+      <div class="card-body">
+        <div class="metric-label">Remaining</div>
+        <div class="metric-value">{{ progress.remaining_target|cedi }}</div>
+        <div class="metric-note">Still required to reach the target</div>
+      </div>
+      <div class="metric-icon"><i class="bi bi-hourglass-split"></i></div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="card metric-card red">
+      <div class="card-body">
+        <div class="metric-label">Expenses paid</div>
+        <div class="metric-value">{{ totals.expenses_paid|cedi }}</div>
+        <div class="metric-note">Tracked separately from the target</div>
+      </div>
+      <div class="metric-icon"><i class="bi bi-wallet2"></i></div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+      <div><h2 class="h6 mb-1">Challenge progress</h2><div class="small text-muted">{{ progress.revenue|cedi }} of {{ progress.target|cedi }} collected</div></div>
+      <div class="d-flex align-items-center gap-3">
+        <strong class="h5 mb-0">{{ progress.percentage|pct }}</strong>
+        <span class="small text-muted">{{ progress.days_remaining }} day{{ progress.days_remaining|pluralize }} remaining</span>
+      </div>
+    </div>
+    <div class="progress-shell" role="progressbar" aria-label="Challenge progress" aria-valuenow="{{ progress.percentage|default:0 }}" aria-valuemin="0" aria-valuemax="100">
+      <div class="progress-fill" style="width:{{ progress.percentage|progress_width }}%"></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header"><h2>Revenue by business unit</h2><div class="sub">Qualifying collections for the challenge</div></div>
+      <div class="table-responsive">
+        <table class="table mb-0">
+          <thead><tr><th>Business unit</th><th class="text-end">Revenue</th></tr></thead>
+          <tbody>
+          {% for row in arm_rows %}
+            <tr><td>{{ row.name }}</td><td class="text-end amount">{{ row.total|cedi }}</td></tr>
+          {% empty %}
+            <tr><td colspan="2" class="text-muted small p-3">No revenue recorded yet.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header"><h2>Recent transactions</h2><div class="sub">Latest revenue and expense records</div></div>
+      <div class="table-responsive">
+        <table class="table mb-0">
+          <thead><tr><th>Date</th><th>Type</th><th>Business unit</th><th>Description</th><th class="text-end">Amount</th></tr></thead>
+          <tbody>
+          {% for row in activity %}
+            <tr>
+              <td class="date">{{ row.date|date:"j M Y" }}</td>
+              <td><span class="badge {% if row.kind == 'revenue' %}badge-soft{% else %}badge-warn-soft{% endif %}">{{ row.type }}</span></td>
+              <td class="small">{{ row.arm }}</td>
+              <td><a href="{{ row.url }}" class="text-ink">{{ row.description|truncatechars:48 }}</a></td>
+              <td class="text-end amount">{{ row.amount|cedi }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5"><div class="empty-inline"><i class="bi bi-journal-text"></i>No transactions recorded yet.</div></td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="d-flex flex-wrap gap-2">
+  <a href="{% url 'revenue_list' %}" class="btn btn-soft">View revenue</a>
+  <a href="{% url 'expense_list' %}" class="btn btn-soft">View expenses</a>
+  <a href="{% url 'reports' %}" class="btn btn-soft">Open reports</a>
+</div>
+{% endblock %}

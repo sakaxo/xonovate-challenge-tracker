@@ -1,0 +1,30 @@
+﻿{% extends 'tracker/base.html' %}
+{% block title %}{{ title }} · Xonovate Challenge Tracker{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <div class="eyebrow"><i class="bi bi-sliders"></i> Settings</div>
+    <h1>{{ title }}</h1>
+    <p class="page-subtitle">Category details for the workspace.</p>
+  </div>
+  <div class="page-actions"><a href="{% url 'settings' %}" class="btn btn-soft">Cancel</a></div>
+</div>
+<div class="row">
+  <div class="col-lg-7">
+    <div class="card form-card">
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+          {% for field in form %}{% include 'tracker/includes/field.html' with field=field %}{% endfor %}
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <a href="{% url 'settings' %}" class="btn btn-soft">Cancel</a>
+            <button class="btn btn-primary" type="submit"><i class="bi bi-check2 me-1"></i>Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

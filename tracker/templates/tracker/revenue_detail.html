@@ -1,0 +1,115 @@
+﻿{% extends 'tracker/base.html' %}
+{% load tracker_extras %}
+{% block title %}{{ transaction.arm }} revenue · Xonovate Challenge Tracker{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <div class="eyebrow"><i class="bi bi-receipt"></i> Revenue transaction</div>
+    <h1>{{ transaction.eligible_amount|cedi }} <span class="fs-6 text-muted fw-normal">qualifying revenue</span></h1>
+    <p class="page-subtitle">{{ transaction.transaction_date|date:"j M Y" }} · {{ transaction.arm.name }} · {{ transaction.category.name }} · <span class="badge {{ transaction.status_badge_class }}">{{ transaction.get_status_display }}</span></p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'revenue_list' %}" class="btn btn-soft">Back to revenue</a>
+    <a href="{% url 'revenue_edit' transaction.pk %}" class="btn btn-primary"><i class="bi bi-pencil me-1"></i>Edit transaction</a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div><h2>Recorded details</h2><div class="sub">Private record · logged locally</div></div>
+        {% if transaction.public_visibility %}<span class="badge badge-soft"><i class="bi bi-eye me-1"></i>Approved for public view</span>{% else %}<span class="badge badge-neutral"><i class="bi bi-eye-slash me-1"></i>Private</span>{% endif %}
+      </div>
+      <div class="card-body">
+        <div class="detail-grid">
+          <div class="detail-item pe-md-3"><div class="label">Transaction date</div><div class="value">{{ transaction.transaction_date|date:"j F Y" }}</div></div>
+          <div class="detail-item"><div class="label">Challenge</div><div class="value">{{ challenge.name }}</div></div>
+          <div class="detail-item pe-md-3"><div class="label">Amount received</div><div class="value">{{ transaction.amount|cedi }} {{ transaction.currency }}</div></div>
+          <div class="detail-item"><div class="label">Qualifying amount</div><div class="value">{{ transaction.eligible_amount|cedi }}</div></div>
+          <div class="detail-item pe-md-3"><div class="label">Business unit</div><div class="value">{{ transaction.arm.name }}</div></div>
+          <div class="detail-item"><div class="label">Category</div><div class="value">{{ transaction.category.name }}</div></div>
+          <div class="detail-item pe-md-3"><div class="label">Payment method</div><div class="value">{{ transaction.get_payment_method_display }}</div></div>
+          <div class="detail-item"><div class="label">Reference</div><div class="value">{{ transaction.reference|default:"—" }}</div></div>
+          <div class="detail-item pe-md-3"><div class="label">Refunded amount</div><div class="value">{{ transaction.refunded_amount|cedi }}</div></div>
+          <div class="detail-item"><div class="label">Customer / payer</div><div class="value">{{ transaction.customer_name|default:"—" }}</div></div>
+        </div>
+        <div class="mt-3">
+          <div class="label eyebrow-note">Internal description</div>
+          <p class="mb-2">{{ transaction.description }}</p>
+          <div class="label eyebrow-note">Internal notes</div>
+          <p class="mb-0 text-muted">{{ transaction.internal_notes|default:"No internal notes."|linebreaksbr }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between"><div><h2>Public description</h2><div class="sub">Approved public text</div></div>{% if not transaction.has_public_description and transaction.public_visibility %}<span class="badge badge-warn-soft">Safe fallback in use</span>{% endif %}</div>
+      <div class="card-body">
+        {% if transaction.public_visibility %}
+          <p class="mb-2">{{ transaction.public_display_description }}</p>
+          <div class="small text-muted">Displayed as {{ transaction.arm.name }} &middot; {{ transaction.category.name }} &middot; {{ transaction.transaction_date|date:"j M Y" }} &middot; {{ transaction.eligible_amount|cedi }}</div>
+        {% else %}
+          <p class="text-muted mb-0">Private &mdash; excluded from the public page.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>Correction history</h2><div class="sub">Recorded changes and timestamps</div></div>
+      <div class="card-body">
+        <div class="timeline">
+          {% for entry in audit_entries %}
+          <div class="timeline-item">
+            <div class="timeline-time">{{ entry.created_at|date:"j M Y, H:i" }}</div>
+            <div class="timeline-text"><strong>{{ entry.get_action_display|default:entry.action|capfirst }}</strong> — {{ entry.summary }}</div>
+          </div>
+          {% empty %}
+          <div class="text-muted small">No audit entries yet.</div>
+          {% endfor %}
+        </div>
+        <div class="divider"></div>
+        <div class="small text-muted">Created {{ transaction.created_at|date:"j M Y, H:i" }} · Last updated {{ transaction.updated_at|date:"j M Y, H:i" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card mb-3">
+      <div class="card-header"><h2>Correction actions</h2><div class="sub">Changes are retained</div></div>
+      <div class="card-body">
+        {% if transaction.status == 'voided' %}
+        <p class="small text-muted">This transaction is voided and contributes nothing to challenge totals.</p>
+        <form method="post" action="{% url 'revenue_action' transaction.pk 'restore' %}">{% csrf_token %}<input type="hidden" name="reason" value="Restored after review"><button class="btn btn-outline-primary w-100" type="submit"><i class="bi bi-arrow-counterclockwise me-1"></i>Restore transaction</button></form>
+        {% elif transaction.status == 'refunded' %}
+        <p class="small text-muted">This transaction is fully refunded. Its net contribution is zero.</p>
+        <form method="post" action="{% url 'revenue_action' transaction.pk 'restore' %}">{% csrf_token %}<input type="hidden" name="reason" value="Refund reversed after review"><button class="btn btn-outline-primary w-100" type="submit"><i class="bi bi-arrow-counterclockwise me-1"></i>Reverse refund</button></form>
+        {% else %}
+        <form method="post" action="{% url 'revenue_action' transaction.pk 'void' %}" class="mb-2">
+          {% csrf_token %}
+          <label class="form-label" for="voidReason">Void reason (optional)</label>
+          <input class="form-control mb-2" id="voidReason" name="reason" placeholder="Duplicate, entered in error, etc.">
+          <button class="btn btn-soft w-100" type="submit" onclick="return confirm('Void this transaction? It will stop counting toward the target.')"><i class="bi bi-slash-circle me-1"></i>Void transaction</button>
+        </form>
+        <form method="post" action="{% url 'revenue_action' transaction.pk 'refund' %}">
+          {% csrf_token %}
+          <input type="hidden" name="reason" value="Marked fully refunded">
+          <button class="btn btn-soft w-100" type="submit" onclick="return confirm('Mark this transaction as fully refunded? Its net contribution becomes zero.')"><i class="bi bi-arrow-return-left me-1"></i>Mark fully refunded</button>
+        </form>
+        <div class="small text-muted mt-3">Partial refunds can be entered when editing the transaction.</div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>Contribution</h2></div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2"><span class="text-muted small">Amount received</span><strong>{{ transaction.amount|cedi }}</strong></div>
+        <div class="d-flex justify-content-between mb-2"><span class="text-muted small">Refunded</span><strong>-{{ transaction.refunded_amount|cedi }}</strong></div>
+        <div class="divider"></div>
+        <div class="d-flex justify-content-between"><span class="small fw-semibold">Counts toward target</span><strong class="text-teal">{{ transaction.eligible_amount|cedi }}</strong></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

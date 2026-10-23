@@ -1,0 +1,69 @@
+{% extends 'tracker/base.html' %}
+{% load tracker_extras %}
+{% block title %}Revenue &middot; Xonovate Challenge Tracker{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <div class="eyebrow"><i class="bi bi-graph-up-arrow"></i> Collected revenue</div>
+    <h1>Revenue</h1>
+    <p class="page-subtitle">Customer payments collected for the challenge.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'revenue_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Record revenue</a>
+  </div>
+</div>
+
+{% if challenge %}
+<div class="filter-bar">
+  <form method="get">
+    <div class="row g-2 align-items-end">
+      <div class="col-6 col-md-2"><label class="form-label" for="revenueStart">From</label><input type="date" class="form-control" id="revenueStart" name="start" value="{{ start|date:'Y-m-d' }}"></div>
+      <div class="col-6 col-md-2"><label class="form-label" for="revenueEnd">To</label><input type="date" class="form-control" id="revenueEnd" name="end" value="{{ end|date:'Y-m-d' }}"></div>
+      <div class="col-6 col-md-2"><label class="form-label" for="revenueArm">Business unit</label><select class="form-select" id="revenueArm" name="arm"><option value="">All business units</option>{% for item in arms %}<option value="{{ item.pk }}" {% if arm and arm.pk == item.pk %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>
+      <div class="col-6 col-md-2"><label class="form-label" for="revenueCategory">Category</label><select class="form-select" id="revenueCategory" name="category"><option value="">All categories</option>{% for item in categories %}<option value="{{ item.pk }}" {% if category_id == item.pk|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>
+      <div class="col-12 col-md-2"><label class="form-label" for="revenueSearch">Search</label><input class="form-control" id="revenueSearch" name="q" value="{{ query }}" placeholder="Description or reference"></div>
+      <div class="col-12 col-md-auto"><button class="btn btn-outline-primary" type="submit">Filter</button><a href="{% url 'revenue_list' %}" class="btn btn-soft">Clear</a></div>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div><h2>{{ total_count }} revenue record{{ total_count|pluralize }}</h2><div class="sub">{{ start|date:"j M Y" }} - {{ end|date:"j M Y" }}</div></div>
+    <div class="d-flex align-items-center gap-3"><div class="fw-semibold">{{ total|cedi }}</div><a href="{% url 'export_csv' %}?report=revenue&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}{% if arm %}&arm={{ arm.pk }}{% endif %}" class="btn btn-sm btn-soft"><i class="bi bi-download me-1"></i>Export CSV</a></div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Date</th><th>Business unit</th><th>Category</th><th>Description</th><th class="text-end">Amount</th><th>Status</th><th>Public</th><th></th></tr></thead>
+      <tbody>
+      {% for txn in rows %}
+      <tr>
+        <td class="date">{{ txn.transaction_date|date:"j M Y" }}</td>
+        <td class="small">{{ txn.arm.name }}</td>
+        <td class="small">{{ txn.category.name }}</td>
+        <td><a href="{% url 'revenue_detail' txn.pk %}" class="text-ink">{{ txn.description|truncatechars:60 }}</a></td>
+        <td class="text-end amount">{{ txn.eligible_amount|cedi }}</td>
+        <td><span class="badge {{ txn.status_badge_class }}">{{ txn.get_status_display }}</span></td>
+        <td>{% if txn.public_visibility %}<i class="bi bi-eye-fill text-teal" title="Approved for public"></i>{% else %}<i class="bi bi-eye-slash text-muted" title="Private"></i>{% endif %}</td>
+        <td class="text-end"><a href="{% url 'revenue_edit' txn.pk %}" class="btn btn-sm btn-soft" title="Edit"><i class="bi bi-pencil"></i></a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8"><div class="empty-inline"><i class="bi bi-graph-up-arrow"></i>No revenue recorded for this period.</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div class="card-footer">
+    <ul class="pagination pagination-sm mb-0 justify-content-end">
+      {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?{% for key,value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">Previous</a></li>{% endif %}
+      <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+      {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?{% for key,value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">Next</a></li>{% endif %}
+    </ul>
+  </div>
+  {% endif %}
+</div>
+{% else %}
+<div class="card"><div class="card-body empty-inline"><i class="bi bi-flag"></i>Challenge settings are not available.</div></div>
+{% endif %}
+{% endblock %}

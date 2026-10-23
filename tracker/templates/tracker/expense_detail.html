@@ -1,0 +1,68 @@
+﻿{% extends 'tracker/base.html' %}
+{% load tracker_extras %}
+{% block title %}Expense · Xonovate Challenge Tracker{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <div class="eyebrow"><i class="bi bi-wallet2"></i> Expense record</div>
+    <h1>{{ expense.amount|cedi }} <span class="fs-6 text-muted fw-normal">{{ expense.category.name }}</span></h1>
+    <p class="page-subtitle">{{ expense.expense_date|date:"j M Y" }} · {{ expense.arm.name|default:"Shared / group-level" }} · <span class="badge {{ expense.status_badge_class }}">{{ expense.status_label }}</span></p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'expense_list' %}" class="btn btn-soft">Back to expenses</a>
+    <a href="{% url 'expense_edit' expense.pk %}" class="btn btn-primary"><i class="bi bi-pencil me-1"></i>Edit expense</a>
+  </div>
+</div>
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card mb-3">
+      <div class="card-header"><h2>Expense details</h2><div class="sub">Reported separately from revenue</div></div>
+      <div class="card-body">
+        <div class="detail-grid">
+          <div class="detail-item pe-md-3"><div class="label">Date</div><div class="value">{{ expense.expense_date|date:"j F Y" }}</div></div>
+          <div class="detail-item"><div class="label">Challenge</div><div class="value">{{ challenge.name }}</div></div>
+          <div class="detail-item pe-md-3"><div class="label">Amount</div><div class="value">{{ expense.amount|cedi }} {{ expense.currency }}</div></div>
+          <div class="detail-item"><div class="label">Payment status</div><div class="value">{{ expense.status_label }}</div></div>
+          <div class="detail-item pe-md-3"><div class="label">Category</div><div class="value">{{ expense.category.name }}</div></div>
+          <div class="detail-item"><div class="label">Business unit</div><div class="value">{{ expense.arm.name|default:"Shared / group-level" }}</div></div>
+          <div class="detail-item pe-md-3"><div class="label">Payee / vendor</div><div class="value">{{ expense.payee|default:"—" }}</div></div>
+          <div class="detail-item"><div class="label">Payment method</div><div class="value">{{ expense.get_payment_method_display }}</div></div>
+        </div>
+        <div class="mt-3"><div class="label eyebrow-note">Description</div><p class="mb-2">{{ expense.description }}</p><div class="label eyebrow-note">Internal notes</div><p class="mb-0 text-muted">{{ expense.internal_notes|default:"No internal notes."|linebreaksbr }}</p></div>
+        {% if expense.receipt %}
+        <div class="mt-3"><a href="{% url 'expense_receipt' expense.pk %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-paperclip me-1"></i>Download receipt</a></div>
+        {% endif %}
+        {% if expense.is_voided and expense.void_reason %}<div class="alert alert-warning mt-3 mb-0"><strong>Void reason:</strong> {{ expense.void_reason }}</div>{% endif %}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>Record history</h2></div>
+      <div class="card-body">
+        <div class="timeline">
+          {% for entry in audit_entries %}<div class="timeline-item"><div class="timeline-time">{{ entry.created_at|date:"j M Y, H:i" }}</div><div class="timeline-text"><strong>{{ entry.action|capfirst }}</strong> — {{ entry.summary }}</div></div>{% empty %}<div class="text-muted small">No audit entries yet.</div>{% endfor %}
+        </div>
+        <div class="divider"></div>
+        <div class="small text-muted">Created {{ expense.created_at|date:"j M Y, H:i" }} · Last updated {{ expense.updated_at|date:"j M Y, H:i" }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card"><div class="card-header"><h2>Correction</h2></div><div class="card-body">
+      {% if expense.is_voided %}
+      <p class="small text-muted">This expense is voided and excluded from expense totals.</p>
+      <form method="post" action="{% url 'expense_action' expense.pk 'restore' %}">{% csrf_token %}<button class="btn btn-outline-primary w-100" type="submit"><i class="bi bi-arrow-counterclockwise me-1"></i>Restore expense</button></form>
+      {% else %}
+      <form method="post" action="{% url 'expense_action' expense.pk 'void' %}">
+        {% csrf_token %}
+        <label class="form-label" for="expenseVoidReason">Void reason (optional)</label>
+        <input class="form-control mb-2" id="expenseVoidReason" name="reason" placeholder="Entered in error, etc.">
+        <button class="btn btn-soft w-100" type="submit" onclick="return confirm('Void this expense? It will be excluded from expense totals.')"><i class="bi bi-slash-circle me-1"></i>Void expense</button>
+      </form>
+      {% endif %}
+<div class="divider"></div>
+      <p class="small text-muted mb-0"><i class="bi bi-shield-check me-1"></i>Corrections are preserved in the audit trail.</p>
+    </div></div>
+  </div>
+</div>
+{% endblock %}
+

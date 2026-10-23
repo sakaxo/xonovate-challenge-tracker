@@ -1,0 +1,70 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign in · Xonovate Challenge Tracker</title>
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+<div class="login-page">
+  <section class="login-art">
+    <div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="brand-mark">X</span>
+        <div>
+          <div class="brand-name">Xonovate</div>
+          <div class="brand-sub">Private finance workspace</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <span class="eyebrow" style="color:#5eead4;">Building Xonovate</span>
+      <h1>100 days to GH₵200,000.</h1>
+      <p>Record what actually happened. Calculate progress automatically. Share only what is deliberately approved for public viewing.</p>
+      <div class="quote">A focused challenge tracker for qualifying revenue, expenses, and transparent progress.</div>
+    </div>
+    <div class="login-art-foot small">
+      <a href="{% url 'public_progress' %}" class="text-white text-decoration-none"><i class="bi bi-display me-1"></i> View public progress</a>
+    </div>
+  </section>
+  <section class="login-panel">
+    <div class="login-card">
+      <div class="login-mark">
+        <span class="brand-mark">X</span>
+        <div>
+          <div class="fw-bold">Xonovate Challenge Tracker</div>
+          <div class="text-muted small">Private access</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body p-4">
+          <h2>Sign in</h2>
+          <p class="text-muted small mb-4">Sign in with your authorised challenge account.</p>
+          {% if form.errors %}
+          <div class="alert alert-danger py-2">Your username or password was not correct. Please try again.</div>
+          {% endif %}
+          <form method="post" novalidate>
+            {% csrf_token %}
+            {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+            <div class="mb-3">
+              <label class="form-label" for="id_username">Username</label>
+              <input type="text" name="username" id="id_username" class="form-control" autofocus autocomplete="username" required>
+            </div>
+            <div class="mb-4">
+              <label class="form-label" for="id_password">Password</label>
+              <input type="password" name="password" id="id_password" class="form-control" autocomplete="current-password" required>
+            </div>
+            <button class="btn btn-primary w-100" type="submit">Sign in securely</button>
+          </form>
+        </div>
+      </div>
+      <p class="login-note mt-3 mb-0">Access is limited to challenge managers. Public progress can be viewed without signing in.</p>
+    </div>
+  </section>
+</div>
+</body>
+</html>

@@ -1,0 +1,96 @@
+{% extends 'tracker/base.html' %}
+{% block title %}Settings &middot; Xonovate Challenge Tracker{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <div class="eyebrow"><i class="bi bi-sliders"></i> Workspace settings</div>
+    <h1>Settings</h1>
+    <p class="page-subtitle">Challenge details, business units, and record categories.</p>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header"><h2>Challenge settings</h2><div class="sub">Single active challenge</div></div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+          <div class="mb-3">
+            <div class="form-label">Challenge name</div>
+            <div class="form-control-plaintext fw-semibold">{{ challenge.name }}</div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">{% include 'tracker/includes/field.html' with field=form.start_date %}</div>
+            <div class="col-md-6">{% include 'tracker/includes/field.html' with field=form.end_date %}</div>
+          </div>
+          <div class="row">
+            <div class="col-md-7">{% include 'tracker/includes/field.html' with field=form.target_amount %}</div>
+            <div class="col-md-5">{% include 'tracker/includes/field.html' with field=form.status %}</div>
+          </div>
+          {% include 'tracker/includes/field.html' with field=form.description %}
+          <div class="d-flex justify-content-end">
+            <button class="btn btn-primary" type="submit"><i class="bi bi-check2 me-1"></i>Save settings</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header"><h2>Business units</h2><div class="sub">Fixed revenue classification</div></div>
+      <div class="card-body">
+        <ul class="list-unstyled mb-3">
+          {% for item in arms %}
+          <li class="d-flex align-items-start gap-2 py-2 {% if not forloop.last %}border-bottom{% endif %}">
+            <i class="bi bi-building-check text-teal mt-1"></i>
+            <div>
+              <div class="fw-semibold">{{ item.name }}</div>
+              {% if item.description %}<div class="small text-muted">{{ item.description }}</div>{% endif %}
+            </div>
+          </li>
+          {% empty %}
+          <li class="text-muted small">No active business units configured.</li>
+          {% endfor %}
+        </ul>
+        <div class="alert alert-info small mb-0">Revenue uses these two business units. Group-wide expenses may be left unassigned.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mt-1">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center"><div><h2>Revenue categories</h2><div class="sub">Customer revenue classifications</div></div><a href="{% url 'revenue_category_create' %}" class="btn btn-sm btn-outline-primary" aria-label="Add revenue category"><i class="bi bi-plus-lg"></i></a></div>
+      <div class="table-responsive"><table class="table mb-0"><thead><tr><th>Category</th><th>Status</th><th></th></tr></thead><tbody>
+        {% for item in revenue_categories %}<tr><td>{{ item.name }}</td><td><span class="badge {% if item.is_active %}badge-soft{% else %}badge-neutral{% endif %}">{% if item.is_active %}Active{% else %}Inactive{% endif %}</span></td><td class="text-end"><a href="{% url 'revenue_category_edit' item.pk %}" class="btn btn-sm btn-soft" aria-label="Edit {{ item.name }}"><i class="bi bi-pencil"></i></a></td></tr>
+        {% empty %}<tr><td colspan="3" class="text-muted small p-3">No revenue categories configured.</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center"><div><h2>Expense categories</h2><div class="sub">Operating cost classifications</div></div><a href="{% url 'expense_category_create' %}" class="btn btn-sm btn-outline-primary" aria-label="Add expense category"><i class="bi bi-plus-lg"></i></a></div>
+      <div class="table-responsive"><table class="table mb-0"><thead><tr><th>Category</th><th>Status</th><th></th></tr></thead><tbody>
+        {% for item in expense_categories %}<tr><td>{{ item.name }}</td><td><span class="badge {% if item.is_active %}badge-soft{% else %}badge-neutral{% endif %}">{% if item.is_active %}Active{% else %}Inactive{% endif %}</span></td><td class="text-end"><a href="{% url 'expense_category_edit' item.pk %}" class="btn btn-sm btn-soft" aria-label="Edit {{ item.name }}"><i class="bi bi-pencil"></i></a></td></tr>
+        {% empty %}<tr><td colspan="3" class="text-muted small p-3">No expense categories configured.</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div class="small text-muted">Additional tools</div>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{% url 'transactions' %}" class="btn btn-sm btn-soft">All records</a>
+      <a href="{% url 'movement_create' %}" class="btn btn-sm btn-soft">Other financial movement</a>
+      <a href="{% url 'simulator' %}" class="btn btn-sm btn-soft">Scenario simulator</a>
+      <a href="{% url 'admin:index' %}" class="btn btn-sm btn-soft"><i class="bi bi-shield-lock me-1"></i>Admin</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

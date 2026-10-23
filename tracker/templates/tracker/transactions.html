@@ -1,0 +1,83 @@
+﻿{% extends 'tracker/base.html' %}
+{% load tracker_extras %}
+{% block title %}Transaction history · Xonovate Challenge Tracker{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <div class="eyebrow"><i class="bi bi-list-ul"></i> Financial records</div>
+    <h1>Transaction history</h1>
+    <p class="page-subtitle">Financial records and audit trail.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'revenue_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Record revenue</a>
+    <a href="{% url 'expense_create' %}" class="btn btn-soft"><i class="bi bi-dash-lg me-1"></i>Record expense</a>
+  </div>
+</div>
+
+{% if challenge %}
+<div class="filter-bar">
+  <form method="get">
+    
+    <div class="row g-2 align-items-end">
+      <div class="col-6 col-md-2"><label class="form-label" for="txnStart">From</label><input type="date" class="form-control" id="txnStart" name="start" value="{{ start|date:'Y-m-d' }}"></div>
+      <div class="col-6 col-md-2"><label class="form-label" for="txnEnd">To</label><input type="date" class="form-control" id="txnEnd" name="end" value="{{ end|date:'Y-m-d' }}"></div>
+      <div class="col-6 col-md-2"><label class="form-label" for="txnType">Type</label><select class="form-select" id="txnType" name="type"><option value="all">All types</option><option value="revenue" {% if txn_type == 'revenue' %}selected{% endif %}>Revenue</option><option value="expense" {% if txn_type == 'expense' %}selected{% endif %}>Expense</option><option value="other" {% if txn_type == 'other' %}selected{% endif %}>Other movement</option></select></div>
+      <div class="col-6 col-md-2"><label class="form-label" for="txnArm">Business unit</label><select class="form-select" id="txnArm" name="arm"><option value="">All business units</option>{% for item in arms %}<option value="{{ item.pk }}" {% if arm and arm.pk == item.pk %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>
+      <div class="col-6 col-md-2"><label class="form-label" for="txnCategory">Category</label><select class="form-select" id="txnCategory" name="category"><option value="">All categories</option>{% for value,label in categories %}<option value="{{ value }}" {% if category_filter == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="col-6 col-md-2"><label class="form-label" for="txnPublic">Public</label><select class="form-select" id="txnPublic" name="public"><option value="">All records</option><option value="yes" {% if public_filter == 'yes' %}selected{% endif %}>Approved for public</option><option value="no" {% if public_filter == 'no' %}selected{% endif %}>Not public</option></select></div>
+      <div class="col-12 col-md-4"><label class="form-label" for="txnSearch">Search descriptions</label><input class="form-control" id="txnSearch" name="q" value="{{ query }}" placeholder="Description, payer, payee, reference..."></div>
+      <div class="col-12 col-md-auto"><button class="btn btn-outline-primary" type="submit"><i class="bi bi-search me-1"></i>Filter</button><a href="{% url 'transactions' %}" class="btn btn-soft">Clear</a></div>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div><h2>{{ total_count }} record{{ total_count|pluralize }}</h2><div class="sub">{{ challenge.name }} · {{ start|date:"j M Y" }} – {{ end|date:"j M Y" }}</div></div>
+    <a href="{% url 'export_csv' %}?report=transactions&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}{% if arm %}&arm={{ arm.pk }}{% endif %}" class="btn btn-sm btn-soft"><i class="bi bi-download me-1"></i>Export CSV</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Date</th><th>Type</th><th>Business unit / group</th><th>Category</th><th>Description</th><th class="text-end">Amount</th><th>Status</th><th>Public</th><th></th></tr></thead>
+      <tbody>
+      {% for row in transaction_rows %}
+      <tr {% if row.is_voided %}class="opacity-75"{% endif %}>
+        <td class="date">{{ row.date|date:"j M Y" }}</td>
+        <td><span class="badge {% if row.kind == 'revenue' %}badge-soft{% elif row.kind == 'expense' %}badge-warn-soft{% else %}badge-neutral{% endif %}">{{ row.type }}</span></td>
+        <td class="small">{{ row.arm }}</td>
+        <td class="small">{{ row.category }}</td>
+        <td><a href="{{ row.url }}" class="text-ink">{{ row.description|truncatechars:60 }}</a></td>
+        <td class="text-end amount">{{ row.amount|cedi }}</td>
+        <td><span class="badge {{ row.badge }}">{{ row.status }}</span></td>
+        <td>{% if row.public %}<span title="Approved for public"><i class="bi bi-eye-fill text-teal"></i></span>{% else %}<span title="Private"><i class="bi bi-eye-slash text-muted"></i></span>{% endif %}</td>
+        <td class="text-end"><a href="{{ row.edit_url }}" class="btn btn-sm btn-soft" title="Edit"><i class="bi bi-pencil"></i></a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="9"><div class="empty-inline"><i class="bi bi-search"></i>No records match these filters.</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div class="card-footer">
+    <nav aria-label="Transaction pages">
+      <ul class="pagination pagination-sm mb-0 justify-content-end">
+        {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?{% for key,value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">Previous</a></li>
+        {% endif %}
+        <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+        {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?{% for key,value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">Next</a></li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+  {% endif %}
+</div>
+{% else %}
+<div class="card"><div class="card-body empty-inline"><i class="bi bi-flag"></i>Challenge settings are not available.</div></div>
+{% endif %}
+{% endblock %}
+
+
+

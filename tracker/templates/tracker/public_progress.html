@@ -1,0 +1,197 @@
+﻿{% load static tracker_extras %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Follow the {{ public_challenge.name }} progress, approved revenue and business activity breakdown.">
+  <title>{{ public_challenge.name }} · Xonovate</title>
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body class="landing-body">
+<div class="landing-wrap">
+  <header class="landing-nav">
+    <a href="{% url 'public_progress' %}" class="landing-brand">
+      <span class="brand-mark">X</span>
+      <span><strong>Xonovate</strong><small>Challenge Tracker</small></span>
+    </a>
+    <div class="landing-nav-actions">
+      <span class="landing-status landing-status-{{ public_challenge.phase }}"><span class="status-dot"></span>{{ public_challenge.status_label }}</span>
+      {% if request.user.is_authenticated %}
+      <a href="{% url 'dashboard' %}" class="btn btn-sm btn-landing"><i class="bi bi-grid-1x2 me-1"></i>Dashboard</a>
+      {% else %}
+      <a href="{% url 'login' %}" class="btn btn-sm btn-landing"><i class="bi bi-lock me-1"></i>Sign in</a>
+      {% endif %}
+    </div>
+  </header>
+
+  <main>
+    <section class="landing-hero">
+      <div class="landing-hero-grid">
+        <div class="landing-hero-copy">
+          <div class="landing-kicker"><i class="bi bi-flag"></i> Building Xonovate</div>
+          <h1>{{ public_challenge.name }}</h1>
+          {% if public_challenge.description %}
+          <p>{{ public_challenge.description|truncatewords:34 }}</p>
+          {% else %}
+          <p>A focused 100-day sprint toward a clear revenue goal, tracked with real recorded results.</p>
+          {% endif %}
+          <div class="landing-dates">
+            <span><i class="bi bi-calendar3"></i>{{ public_challenge.start_date|date:"j M Y" }}</span>
+            <span class="date-separator">to</span>
+            <span><i class="bi bi-calendar-check"></i>{{ public_challenge.end_date|date:"j M Y" }}</span>
+            <span class="landing-duration">{{ public_challenge.duration }} days</span>
+          </div>
+        </div>
+        <div class="landing-hero-amount">
+          <div class="landing-amount-label">Qualifying revenue collected</div>
+          <div class="landing-amount">{{ progress.revenue|cedi }}</div>
+          <div class="landing-amount-meta">
+            <span>Target {{ progress.target|cedi }}</span>
+            <span>{{ progress.percentage|pct }} achieved</span>
+          </div>
+        </div>
+      </div>
+      <div class="landing-progress">
+        <div class="landing-progress-head">
+          <span>
+            {% if public_challenge.phase == 'upcoming' %}
+            Starts in {{ public_challenge.days_until_start }} day{{ public_challenge.days_until_start|pluralize }}
+            {% elif public_challenge.phase == 'completed' %}
+            Challenge complete
+            {% else %}
+            Day {{ public_challenge.current_day }} of {{ public_challenge.duration }}
+            {% endif %}
+          </span>
+          <span>{{ progress.days_remaining }} day{{ progress.days_remaining|pluralize }} remaining</span>
+        </div>
+        <div class="landing-progress-track">
+          <div class="landing-progress-fill" style="width:{{ progress.percentage|progress_width }}%"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="landing-metrics" aria-label="Challenge summary">
+      <div class="landing-metric">
+        <span class="landing-metric-icon"><i class="bi bi-bullseye"></i></span>
+        <span class="landing-metric-label">Target</span>
+        <strong>{{ progress.target|cedi }}</strong>
+      </div>
+      <div class="landing-metric">
+        <span class="landing-metric-icon"><i class="bi bi-graph-up-arrow"></i></span>
+        <span class="landing-metric-label">Collected</span>
+        <strong>{{ progress.revenue|cedi }}</strong>
+      </div>
+      <div class="landing-metric">
+        <span class="landing-metric-icon"><i class="bi bi-signpost-2"></i></span>
+        <span class="landing-metric-label">Remaining</span>
+        <strong>{{ progress.remaining_target|cedi }}</strong>
+      </div>
+      <div class="landing-metric">
+        <span class="landing-metric-icon"><i class="bi bi-hourglass-split"></i></span>
+        <span class="landing-metric-label">Days remaining</span>
+        <strong>{{ progress.days_remaining }}</strong>
+      </div>
+    </section>
+
+    <div class="landing-layout">
+      <section class="landing-panel">
+        <div class="landing-panel-head">
+          <div>
+            <div class="landing-kicker">Business activity</div>
+            <h2>Revenue by business unit</h2>
+          </div>
+          <span class="landing-panel-note">Share of collected revenue</span>
+        </div>
+        <div class="landing-arm-list">
+          {% for row in arm_rows %}
+          <div class="landing-arm">
+            <div class="landing-arm-head">
+              <span><span class="breakdown-dot" style="background:{{ row.color }}"></span>{{ row.name }}</span>
+              <strong>{{ row.total|cedi }}</strong>
+            </div>
+            <div class="landing-arm-track">
+              <div class="landing-arm-fill" style="width:{% if progress.revenue > 0 %}{% widthratio row.total progress.revenue 100 %}{% else %}0{% endif %}%;background:{{ row.color }}"></div>
+            </div>
+            <div class="landing-arm-share">{% if progress.revenue > 0 %}{% widthratio row.total progress.revenue 100 %}%{% else %}0%{% endif %}</div>
+          </div>
+          {% empty %}
+          <div class="landing-empty-inline"><i class="bi bi-bar-chart"></i>Revenue will appear here as the challenge progresses.</div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <aside class="landing-panel">
+        <div class="landing-panel-head">
+          <div>
+            <div class="landing-kicker">Momentum</div>
+            <h2>Recent progress</h2>
+          </div>
+        </div>
+        <div class="landing-mini-stats">
+          <div class="landing-mini-stat">
+            <span>This week</span>
+            <strong>{% if current_week %}{{ current_week.total|cedi }}{% else %}{{ 0|cedi }}{% endif %}</strong>
+            {% if current_week %}<small>{{ current_week.label }}</small>{% else %}<small>Not started</small>{% endif %}
+          </div>
+          <div class="landing-mini-stat">
+            <span>This month</span>
+            <strong>{{ month_revenue|cedi }}</strong>
+            <small>{{ today|date:"F Y" }}</small>
+          </div>
+        </div>
+        <div class="landing-week-list">
+          {% for week in recent_weeks %}
+          <div class="landing-week">
+            <span class="landing-week-marker"></span>
+            <div><strong>Week {{ week.week }}</strong><small>{{ week.label }}</small></div>
+            <span>{{ week.total|cedi }}</span>
+          </div>
+          {% empty %}
+          <div class="landing-empty-inline"><i class="bi bi-calendar-week"></i>The challenge has not started yet.</div>
+          {% endfor %}
+        </div>
+      </aside>
+    </div>
+
+    <section class="landing-panel landing-transactions">
+      <div class="landing-panel-head">
+        <div>
+          <div class="landing-kicker">Approved updates</div>
+          <h2>Recent revenue</h2>
+        </div>
+        <span class="landing-panel-note">{{ public_count }} approved transaction{{ public_count|pluralize }}</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table landing-table mb-0">
+          <thead><tr><th>Date</th><th>Business activity</th><th>Update</th><th class="text-end">Amount</th></tr></thead>
+          <tbody>
+          {% for txn in public_transactions %}
+            <tr>
+              <td class="date">{{ txn.date|date:"j M Y" }}</td>
+              <td>{{ txn.arm }}</td>
+              <td class="landing-description">{{ txn.description }}</td>
+              <td class="text-end amount">{{ txn.amount|cedi }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4"><div class="landing-empty-inline"><i class="bi bi-journal-text"></i>Approved revenue updates will appear here.</div></td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if public_count > public_transactions|length %}
+      <div class="landing-table-note">Showing the {{ public_transactions|length }} most recent approved transactions.</div>
+      {% endif %}
+    </section>
+  </main>
+
+  <footer class="landing-footer">
+    <span>Xonovate Challenge Tracker</span>
+    <span>Progress reflects qualifying revenue recorded for this challenge.</span>
+  </footer>
+</div>
+</body>
+</html>
+

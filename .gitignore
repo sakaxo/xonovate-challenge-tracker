@@ -1,0 +1,24 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+# *.sqlite3
+
+# Local financial data and uploads
+# db.sqlite3
+# db.sqlite3-journal
+media/
+staticfiles/
+
+# Environment and editor files
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+*.log
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini

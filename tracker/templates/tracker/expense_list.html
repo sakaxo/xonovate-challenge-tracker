@@ -1,0 +1,69 @@
+{% extends 'tracker/base.html' %}
+{% load tracker_extras %}
+{% block title %}Expenses &middot; Xonovate Challenge Tracker{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <div class="eyebrow"><i class="bi bi-wallet2"></i> Business expenses</div>
+    <h1>Expenses</h1>
+    <p class="page-subtitle">Operating costs, tracked separately from revenue.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'expense_create' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Record expense</a>
+  </div>
+</div>
+
+{% if challenge %}
+<div class="filter-bar">
+  <form method="get">
+    <div class="row g-2 align-items-end">
+      <div class="col-6 col-md-2"><label class="form-label" for="expenseStart">From</label><input type="date" class="form-control" id="expenseStart" name="start" value="{{ start|date:'Y-m-d' }}"></div>
+      <div class="col-6 col-md-2"><label class="form-label" for="expenseEnd">To</label><input type="date" class="form-control" id="expenseEnd" name="end" value="{{ end|date:'Y-m-d' }}"></div>
+      <div class="col-6 col-md-2"><label class="form-label" for="expenseArm">Business unit</label><select class="form-select" id="expenseArm" name="arm"><option value="">All business units</option>{% for item in arms %}<option value="{{ item.pk }}" {% if arm and arm.pk == item.pk %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>
+      <div class="col-6 col-md-2"><label class="form-label" for="expenseCategory">Category</label><select class="form-select" id="expenseCategory" name="category"><option value="">All categories</option>{% for item in categories %}<option value="{{ item.pk }}" {% if category_id == item.pk|stringformat:'s' %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>
+      <div class="col-6 col-md-2"><label class="form-label" for="expenseStatus">Status</label><select class="form-select" id="expenseStatus" name="payment_status"><option value="">All statuses</option><option value="paid" {% if payment_status == 'paid' %}selected{% endif %}>Paid</option><option value="unpaid" {% if payment_status == 'unpaid' %}selected{% endif %}>Unpaid</option></select></div>
+      <div class="col-12 col-md-2"><label class="form-label" for="expenseSearch">Search</label><input class="form-control" id="expenseSearch" name="q" value="{{ query }}" placeholder="Description or payee"></div>
+      <div class="col-12 col-md-auto"><button class="btn btn-outline-primary" type="submit">Filter</button><a href="{% url 'expense_list' %}" class="btn btn-soft">Clear</a></div>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div><h2>{{ total_count }} expense record{{ total_count|pluralize }}</h2><div class="sub">{{ start|date:"j M Y" }} - {{ end|date:"j M Y" }}</div></div>
+    <div class="d-flex flex-wrap align-items-center gap-3"><div class="small text-muted">Paid <strong class="text-ink">{{ totals.paid|cedi }}</strong></div><div class="small text-muted">Unpaid <strong class="text-ink">{{ totals.unpaid|cedi }}</strong></div><a href="{% url 'export_csv' %}?report=expenses&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}{% if arm %}&arm={{ arm.pk }}{% endif %}" class="btn btn-sm btn-soft"><i class="bi bi-download me-1"></i>Export CSV</a></div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Date</th><th>Business unit</th><th>Category</th><th>Description</th><th class="text-end">Amount</th><th>Payment</th><th></th></tr></thead>
+      <tbody>
+      {% for expense in rows %}
+      <tr {% if expense.is_voided %}class="opacity-75"{% endif %}>
+        <td class="date">{{ expense.expense_date|date:"j M Y" }}</td>
+        <td class="small">{{ expense.arm.name|default:"Shared / group" }}</td>
+        <td class="small">{{ expense.category.name }}</td>
+        <td><a href="{% url 'expense_detail' expense.pk %}" class="text-ink">{{ expense.description|truncatechars:60 }}</a>{% if expense.is_voided %} <span class="badge badge-neutral">Voided</span>{% endif %}</td>
+        <td class="text-end amount">{{ expense.amount|cedi }}</td>
+        <td><span class="badge {{ expense.status_badge_class }}">{{ expense.status_label }}</span></td>
+        <td class="text-end"><a href="{% url 'expense_edit' expense.pk %}" class="btn btn-sm btn-soft" title="Edit"><i class="bi bi-pencil"></i></a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7"><div class="empty-inline"><i class="bi bi-wallet2"></i>No expenses recorded for this period.</div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div class="card-footer">
+    <ul class="pagination pagination-sm mb-0 justify-content-end">
+      {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?{% for key,value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">Previous</a></li>{% endif %}
+      <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+      {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?{% for key,value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value|urlencode }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">Next</a></li>{% endif %}
+    </ul>
+  </div>
+  {% endif %}
+</div>
+{% else %}
+<div class="card"><div class="card-body empty-inline"><i class="bi bi-flag"></i>Challenge settings are not available.</div></div>
+{% endif %}
+{% endblock %}

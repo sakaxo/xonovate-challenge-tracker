@@ -1,0 +1,73 @@
+﻿{% extends 'tracker/base.html' %}
+{% block title %}{{ title }} · Xonovate Challenge Tracker{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <div class="eyebrow"><i class="bi bi-wallet2"></i> Business expense</div>
+    <h1>{{ title }}</h1>
+    <p class="page-subtitle">Log an operating cost.</p>
+  </div>
+  <div class="page-actions">
+    {% if expense %}<a href="{% url 'expense_detail' expense.pk %}" class="btn btn-soft">Cancel</a>{% else %}<a href="{% url 'dashboard' %}" class="btn btn-soft">Cancel</a>{% endif %}
+  </div>
+</div>
+
+<form method="post" enctype="multipart/form-data" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card form-card">
+        <div class="card-body">
+          <div class="form-section">
+            <div class="form-section-title">Expense details</div>
+            <div class="row">
+              <div class="col-md-6">{% include 'tracker/includes/field.html' with field=form.expense_date %}</div>
+              <div class="col-md-4">{% include 'tracker/includes/field.html' with field=form.amount %}</div>
+              <div class="col-md-2">{% include 'tracker/includes/field.html' with field=form.currency %}</div>
+            </div>
+            <div class="row">
+              <div class="col-md-6">{% include 'tracker/includes/field.html' with field=form.category %}</div>
+              <div class="col-md-6">{% include 'tracker/includes/field.html' with field=form.arm %}</div>
+            </div>
+            {% include 'tracker/includes/field.html' with field=form.description %}
+          </div>
+          <div class="form-section">
+            <div class="form-section-title">Payment</div>
+            <div class="row">
+              <div class="col-md-6">{% include 'tracker/includes/field.html' with field=form.payee %}</div>
+              <div class="col-md-6">{% include 'tracker/includes/field.html' with field=form.payment_method %}</div>
+            </div>
+            {% include 'tracker/includes/field.html' with field=form.payment_status %}
+          </div>
+          <div class="form-section mb-0">
+            <div class="form-section-title">Evidence and notes</div>
+            {% include 'tracker/includes/field.html' with field=form.receipt %}
+            {% include 'tracker/includes/field.html' with field=form.internal_notes %}
+          </div>
+        </div>
+        <div class="card-footer d-flex justify-content-end gap-2">
+          <a href="{% if expense %}{% url 'expense_detail' expense.pk %}{% else %}{% url 'dashboard' %}{% endif %}" class="btn btn-soft">Cancel</a>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i>Save expense</button>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card mb-3"><div class="card-body">
+        <h3 class="h6">Paid vs unpaid</h3>
+        <p class="small text-muted">Unpaid expenses remain listed as obligations until marked paid.</p>
+        <div class="divider"></div>
+        <h3 class="h6">Shared expenses</h3>
+        <p class="small text-muted mb-0">Leave business unit blank for group-wide costs.</p>
+      </div></div>
+      <div class="card"><div class="card-body">
+        <h3 class="h6">Receipts</h3>
+        <p class="small text-muted mb-0">PDF, JPG, or PNG up to 5 MB. Stored privately.</p>
+      </div></div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+
+

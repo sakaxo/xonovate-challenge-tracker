@@ -1,0 +1,57 @@
+﻿{% extends 'tracker/base.html' %}
+{% block title %}{{ title }} · Xonovate Challenge Tracker{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <div class="eyebrow"><i class="bi bi-arrow-left-right"></i> Non-revenue records</div>
+    <h1>{{ title }}</h1>
+    <p class="page-subtitle">Non-revenue funds and financial adjustments.</p>
+  </div>
+  <div class="page-actions">
+    {% if movement %}<a href="{% url 'movement_detail' movement.pk %}" class="btn btn-soft">Cancel</a>{% else %}<a href="{% url 'dashboard' %}" class="btn btn-soft">Cancel</a>{% endif %}
+  </div>
+</div>
+<form method="post" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card form-card">
+        <div class="card-body">
+          <div class="form-section">
+            <div class="form-section-title">Movement</div>
+
+            <div class="row">
+              <div class="col-md-6">{% include 'tracker/includes/field.html' with field=form.movement_type %}</div>
+              <div class="col-md-6">{% include 'tracker/includes/field.html' with field=form.movement_date %}</div>
+            </div>
+            <div class="row">
+              <div class="col-md-4">{% include 'tracker/includes/field.html' with field=form.amount %}</div>
+              <div class="col-md-2">{% include 'tracker/includes/field.html' with field=form.currency %}</div>
+              <div class="col-md-6">{% include 'tracker/includes/field.html' with field=form.arm %}</div>
+            </div>
+            {% include 'tracker/includes/field.html' with field=form.description %}
+            {% include 'tracker/includes/field.html' with field=form.reference %}
+            {% include 'tracker/includes/field.html' with field=form.notes %}
+          </div>
+        </div>
+        <div class="card-footer d-flex justify-content-end gap-2">
+          <a href="{% if movement %}{% url 'movement_detail' movement.pk %}{% else %}{% url 'dashboard' %}{% endif %}" class="btn btn-soft">Cancel</a>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i>Save movement</button>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card"><div class="card-body">
+        <h3 class="h6">Classification</h3>
+        <p class="small text-muted">Loans, owner contributions, investments, grants, and other non-revenue receipts.</p>
+        <div class="divider"></div>
+        <h3 class="h6">Refund handling</h3>
+        <p class="small text-muted mb-0">Refunds already recorded on a revenue transaction need no second entry here.</p>
+      </div></div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+

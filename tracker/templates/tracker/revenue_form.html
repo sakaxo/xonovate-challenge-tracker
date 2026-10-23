@@ -1,0 +1,83 @@
+﻿{% extends 'tracker/base.html' %}
+{% block title %}{{ title }} · Xonovate Challenge Tracker{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <div class="eyebrow"><i class="bi bi-graph-up-arrow"></i> Actual revenue</div>
+    <h1>{{ title }}</h1>
+    <p class="page-subtitle">Log a customer payment received during the challenge.</p>
+  </div>
+  <div class="page-actions">
+    {% if transaction %}<a href="{% url 'revenue_detail' transaction.pk %}" class="btn btn-soft">Cancel</a>{% else %}<a href="{% url 'dashboard' %}" class="btn btn-soft">Cancel</a>{% endif %}
+  </div>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="row g-3">
+    <div class="col-lg-8">
+      <div class="card form-card mb-3">
+        <div class="card-body">
+          <div class="form-section">
+            <div class="form-section-title">Payment</div>
+            <div class="row">
+              <div class="col-md-6">{% include 'tracker/includes/field.html' with field=form.transaction_date %}</div>
+              <div class="col-md-4">{% include 'tracker/includes/field.html' with field=form.amount %}</div>
+              <div class="col-md-2">{% include 'tracker/includes/field.html' with field=form.currency %}</div>
+            </div>
+            <div class="row">
+              <div class="col-md-6">{% include 'tracker/includes/field.html' with field=form.arm %}</div>
+              <div class="col-md-6">{% include 'tracker/includes/field.html' with field=form.category %}</div>
+            </div>
+          </div>
+          <div class="form-section">
+            <div class="form-section-title">Description</div>
+            {% include 'tracker/includes/field.html' with field=form.description %}
+            <div class="row">
+              <div class="col-md-6">{% include 'tracker/includes/field.html' with field=form.customer_name %}</div>
+              <div class="col-md-6">{% include 'tracker/includes/field.html' with field=form.payment_method %}</div>
+            </div>
+            {% include 'tracker/includes/field.html' with field=form.reference %}
+          </div>
+          <div class="form-section mb-0">
+            <div class="form-section-title">Status and corrections</div>
+            <div class="row">
+              <div class="col-md-6">{% include 'tracker/includes/field.html' with field=form.status %}</div>
+              <div class="col-md-6">{% include 'tracker/includes/field.html' with field=form.refunded_amount %}</div>
+            </div>
+            {% include 'tracker/includes/field.html' with field=form.internal_notes %}
+          </div>
+        </div>
+        <div class="card-footer d-flex justify-content-end gap-2">
+          <a href="{% if transaction %}{% url 'revenue_detail' transaction.pk %}{% else %}{% url 'dashboard' %}{% endif %}" class="btn btn-soft">Cancel</a>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-check2 me-1"></i>Save revenue</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card form-card mb-3">
+        <div class="card-body">
+          <div class="form-section-title">Public documentation</div>
+          {% include 'tracker/includes/field.html' with field=form.public_visibility %}
+          <div class="alert alert-info py-2 small mt-2">
+            Approved records appear on the public page with the description you provide.
+          </div>
+          {% include 'tracker/includes/field.html' with field=form.public_description %}
+          <p class="small text-muted mb-0">Customer names, contacts, and payment references stay private.</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body">
+          <h3 class="h6">What counts</h3>
+          <p class="small text-muted">Customer revenue collected during the challenge.</p>
+          <p class="small text-muted mb-0">Use <a href="{% url 'movement_create' %}">other financial movements</a> for loans, contributions, grants, transfers, and refunds.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+

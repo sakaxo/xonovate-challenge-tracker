@@ -1,0 +1,75 @@
+﻿{% extends 'tracker/base.html' %}
+{% load tracker_extras %}
+{% block title %}Reports &middot; Xonovate Challenge Tracker{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <div class="eyebrow"><i class="bi bi-file-earmark-bar-graph"></i> Challenge report</div>
+    <h1>Reports</h1>
+    <p class="page-subtitle">Challenge results and exportable records.</p>
+  </div>
+  <div class="page-actions">
+    <a href="{% url 'simulator' %}" class="btn btn-soft"><i class="bi bi-calculator me-1"></i>Scenario simulator</a>
+  </div>
+</div>
+
+{% if challenge %}
+<div class="filter-bar">
+  <form method="get">
+    <div class="row g-2 align-items-end">
+      <div class="col-6 col-md-3"><label class="form-label" for="reportStart">From</label><input class="form-control" type="date" id="reportStart" name="start" value="{{ start|date:'Y-m-d' }}"></div>
+      <div class="col-6 col-md-3"><label class="form-label" for="reportEnd">To</label><input class="form-control" type="date" id="reportEnd" name="end" value="{{ end|date:'Y-m-d' }}"></div>
+      <div class="col-12 col-md-3"><label class="form-label" for="reportArm">Business unit</label><select class="form-select" id="reportArm" name="arm"><option value="">All business units</option>{% for item in arms %}<option value="{{ item.pk }}" {% if arm and arm.pk == item.pk %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></div>
+      <div class="col-12 col-md-auto"><button class="btn btn-outline-primary" type="submit"><i class="bi bi-funnel me-1"></i>Run report</button></div>
+    </div>
+  </form>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-lg-3"><div class="card metric-card teal"><div class="card-body"><div class="metric-label">Qualifying revenue</div><div class="metric-value">{{ totals.revenue|cedi }}</div><div class="metric-note">{{ totals.revenue_transaction_count }} collected payment{{ totals.revenue_transaction_count|pluralize }}</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card metric-card blue"><div class="card-body"><div class="metric-label">Target</div><div class="metric-value">{{ challenge.target_amount|cedi }}</div><div class="metric-note">{{ totals.percentage_achieved|pct }} achieved</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card metric-card amber"><div class="card-body"><div class="metric-label">Remaining</div><div class="metric-value">{{ totals.remaining_target|cedi }}</div><div class="metric-note">Based on qualifying revenue</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card metric-card red"><div class="card-body"><div class="metric-label">Expenses paid</div><div class="metric-value">{{ totals.expenses_paid|cedi }}</div><div class="metric-note">Separate from target</div></div></div></div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2"><div><h2>{{ challenge.name }}</h2><div class="sub">{{ start|date:"j M Y" }} - {{ end|date:"j M Y" }}{% if arm %} &middot; {{ arm.name }}{% endif %}</div></div><a href="{% url 'export_csv' %}?report=overall&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}{% if arm %}&arm={{ arm.pk }}{% endif %}" class="btn btn-sm btn-primary"><i class="bi bi-download me-1"></i>Export summary</a></div>
+  <div class="table-responsive"><table class="table mb-0">
+    <thead><tr><th>Measure</th><th class="text-end">Value</th></tr></thead>
+    <tbody>
+      <tr><td>Target amount</td><td class="text-end amount">{{ challenge.target_amount|cedi }}</td></tr>
+      <tr><td>Qualifying revenue collected</td><td class="text-end amount">{{ totals.revenue|cedi }}</td></tr>
+      <tr><td>Remaining target</td><td class="text-end amount">{{ totals.remaining_target|cedi }}</td></tr>
+      <tr><td>Percentage achieved</td><td class="text-end amount">{{ totals.percentage_achieved|pct }}</td></tr>
+      <tr><td>Expenses paid</td><td class="text-end amount">{{ totals.expenses_paid|cedi }}</td></tr>
+      <tr><td>Unpaid expense obligations</td><td class="text-end amount">{{ totals.expenses_unpaid|cedi }}</td></tr>
+    </tbody>
+  </table></div>
+  <div class="card-footer small text-muted">Progress reflects collected customer revenue. Expenses are reported separately.</div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><h2>Revenue by business unit</h2></div>
+      <div class="table-responsive"><table class="table mb-0"><thead><tr><th>Business unit</th><th class="text-end">Revenue</th><th class="text-end">Share</th></tr></thead><tbody>
+        {% for row in arm_rows %}<tr><td>{{ row.name }}</td><td class="text-end amount">{{ row.total|cedi }}</td><td class="text-end">{% widthratio row.total totals.revenue 100 %}%</td></tr>{% empty %}<tr><td colspan="3" class="text-muted small p-3">No qualifying revenue in this period.</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><h2>Downloads</h2><div class="sub">CSV exports for this report period</div></div>
+      <div class="card-body d-flex flex-column gap-2">
+        <a href="{% url 'export_csv' %}?report=revenue&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}{% if arm %}&arm={{ arm.pk }}{% endif %}" class="btn btn-soft text-start"><i class="bi bi-download me-2"></i>Revenue records</a>
+        <a href="{% url 'export_csv' %}?report=expenses&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}{% if arm %}&arm={{ arm.pk }}{% endif %}" class="btn btn-soft text-start"><i class="bi bi-download me-2"></i>Expense records</a>
+        <a href="{% url 'export_csv' %}?report=revenue_by_arm&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}{% if arm %}&arm={{ arm.pk }}{% endif %}" class="btn btn-soft text-start"><i class="bi bi-download me-2"></i>Revenue by business unit</a>
+        <a href="{% url 'export_csv' %}?report=public&start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}{% if arm %}&arm={{ arm.pk }}{% endif %}" class="btn btn-soft text-start"><i class="bi bi-download me-2"></i>Publicly approved records</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="card"><div class="card-body empty-inline"><i class="bi bi-flag"></i>Challenge settings are not available.</div></div>
+{% endif %}
+{% endblock %}

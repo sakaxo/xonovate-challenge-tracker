@@ -1,0 +1,98 @@
+{% extends 'tracker/base.html' %}
+{% load tracker_extras %}
+{% block title %}Scenario simulator · Xonovate Challenge Tracker{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <div class="eyebrow"><i class="bi bi-calculator"></i> Hypothetical planning</div>
+    <h1>Challenge scenario simulator</h1>
+    <p class="page-subtitle">Model future scenarios without affecting actual results.</p>
+  </div>
+</div>
+
+<div class="sim-banner mb-3"><i class="bi bi-exclamation-triangle me-1"></i> Simulation only. Actual challenge figures remain unchanged.</div>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card form-card">
+      <div class="card-header"><h2>Assumptions</h2><div class="sub">Scenario inputs</div></div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+          {% include 'tracker/includes/field.html' with field=form.target %}
+          <div class="row">
+            <div class="col-6">{% include 'tracker/includes/field.html' with field=form.days %}</div>
+            <div class="col-6">{% include 'tracker/includes/field.html' with field=form.working_days_per_week %}</div>
+          </div>
+          <div class="row">
+            <div class="col-6">{% include 'tracker/includes/field.html' with field=form.average_sale_price %}</div>
+            <div class="col-6">{% include 'tracker/includes/field.html' with field=form.sales_per_day %}</div>
+          </div>
+          <div class="row">
+            <div class="col-6">{% include 'tracker/includes/field.html' with field=form.delivery_cost_per_sale %}</div>
+            <div class="col-6">{% include 'tracker/includes/field.html' with field=form.collection_delay_days %}</div>
+          </div>
+          {% include 'tracker/includes/field.html' with field=form.save_scenario %}
+          <button class="btn btn-primary w-100 mt-2" type="submit"><i class="bi bi-calculator me-1"></i>Calculate scenario</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    {% if scenario %}
+    <div class="card mb-3 border-warning">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div><h2>Simulated result</h2><div class="sub">For planning only</div></div>
+        <span class="badge text-bg-warning">SIMULATED — NOT ACTUAL</span>
+      </div>
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-6 col-md-4"><div class="progress-stat"><div class="label">Expected sales</div><div class="value">{{ scenario.expected_sales|floatformat:2 }}</div></div></div>
+          <div class="col-6 col-md-4"><div class="progress-stat"><div class="label">Working days</div><div class="value">{{ scenario.available_working_days }}</div></div></div>
+          <div class="col-6 col-md-4"><div class="progress-stat"><div class="label">Gross projected</div><div class="value">{{ scenario.gross_projected|cedi }}</div></div></div>
+          <div class="col-6 col-md-4"><div class="progress-stat"><div class="label">Collections in period</div><div class="value">{{ scenario.expected_collections|cedi }}</div></div></div>
+          <div class="col-6 col-md-4"><div class="progress-stat"><div class="label">Delivery costs</div><div class="value">{{ scenario.delivery_costs|cedi }}</div></div></div>
+          <div class="col-6 col-md-4"><div class="progress-stat"><div class="label">Contribution</div><div class="value">{{ scenario.contribution|cedi }}</div></div></div>
+          <div class="col-6 col-md-4"><div class="progress-stat"><div class="label">Remaining required</div><div class="value">{{ scenario.remaining_required|cedi }}</div></div></div>
+          <div class="col-6 col-md-4"><div class="progress-stat"><div class="label">Sales needed for target</div><div class="value">{{ scenario.sales_needed }}</div></div></div>
+          <div class="col-6 col-md-4"><div class="progress-stat"><div class="label">Target reached?</div><div class="value">{% if scenario.target_achieved %}Projected yes{% else %}Projected no{% endif %}</div></div></div>
+        </div>
+        <div class="divider"></div>
+        <div class="small text-muted">Collection timing models a {{ scenario.collection_delay_days }}-day delay. Gross projection uses all expected sales in the period; collection projection excludes sales too close to the end to collect. Delivery costs are applied to expected sales. This is a simulation, not a forecast or a financial record.</div>
+      </div>
+    </div>
+    {% else %}
+    <div class="card mb-3"><div class="card-body empty-inline"><i class="bi bi-sliders"></i>Add your assumptions to see a projected result.</div></div>
+    {% endif %}
+
+    <div class="card mb-3">
+      <div class="card-header"><h2>Baseline calculations</h2><div class="sub">Reference arithmetic at the GH₵200,000 target</div></div>
+      <div class="table-responsive"><table class="table baseline-table mb-0">
+        <thead><tr><th>Scenario</th><th class="text-end">Projected sales</th><th class="text-end">Versus target</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for row in baseline_rows %}
+          <tr>
+            <td>{{ row.count }} fully paid sales × {{ row.price|cedi }}</td>
+            <td class="text-end amount">{{ row.total|cedi }}</td>
+            <td class="text-end amount">{% if row.reaches_target %}+{{ row.surplus|cedi }}{% else %}-{{ row.shortfall|cedi }}{% endif %}</td>
+            <td>{% if row.reaches_target %}<span class="badge badge-soft">Reaches target</span>{% else %}<span class="badge badge-warn-soft">Shortfall</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table></div>
+      <div class="card-footer small text-muted">Simulation only. Actual results are unchanged.</div>
+    </div>
+
+    {% if scenarios %}
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center"><div><h2>Saved scenario comparison</h2><div class="sub">Stored in this browser session only</div></div><form method="post">{% csrf_token %}<input type="hidden" name="action" value="clear"><button class="btn btn-sm btn-soft" type="submit">Clear</button></form></div>
+      <div class="table-responsive"><table class="table mb-0"><thead><tr><th>Scenario</th><th class="text-end">Expected sales</th><th class="text-end">Gross projected</th><th class="text-end">Collections</th><th class="text-end">Contribution</th><th>Target</th></tr></thead><tbody>
+        {% for row in scenarios %}<tr><td class="small">{{ row.label }}</td><td class="text-end">{{ row.expected_sales }}</td><td class="text-end amount">{{ row.gross_projected }}</td><td class="text-end amount">{{ row.expected_collections }}</td><td class="text-end amount">{{ row.contribution }}</td><td>{% if row.target_achieved %}<span class="badge badge-soft">Projected reached</span>{% else %}<span class="badge badge-warn-soft">Projected short</span>{% endif %}</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
